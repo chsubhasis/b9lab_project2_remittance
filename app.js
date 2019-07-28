@@ -8,16 +8,18 @@ const remittanceJson = require("../build/contracts/Remittance.json");
 console.log("going to call addEventListener");
 
 window.addEventListener('load', async() => {
-    console.log("Enter into addEventListener " + web3.currentProvider);
-    if (typeof web3 !== 'undefined') {
+   // console.log("Enter into addEventListener " + web3.currentProvider);
+    /*if (typeof web3 !== 'undefined') {
         console.log("web3 is not undefined")
         window.web3 = new Web3(web3.currentProvider);
     } else {
         console.log("web3 is undefined")
         window.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545')); 
-    }
+    }*/
+    window.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
     Remittance = truffleContract(remittanceJson);
-    Remittance.setProvider(web3.currentProvider);
+    //Remittance.setProvider(web3.currentProvider);
+    Remittance.setProvider(new Web3.providers.HttpProvider('http://localhost:8545'));
 
     try {
         web3.eth.getAccounts().then(e => console.log(e));
@@ -28,7 +30,6 @@ window.addEventListener('load', async() => {
             $("#balance").html("N/A");
             throw new Error("No account to transact");
         }
-        //const accountAlice = accounts[1];
         const accountAlice = accounts[1];
         const accountCarol = accounts[2];
         console.log(accountAlice);
@@ -53,20 +54,23 @@ window.addEventListener('load', async() => {
 async function depositFunds() {
     try {
         $("#error").html('');
-
+        console.log("Enter into depositFunds");
         const instance = await Remittance.deployed();
+        console.log("instance:"+instance);
         const accounts = await web3.eth.getAccounts();
         const alice = accounts[1];
         const carol = accounts[2];
         const password = $('input[name="password-bob"]').val();
+        console.log("password:"+password);
         const deadline = $("input[name='deadline']").val() * 86400;
-
+        console.log("deadline:"+deadline);
         const value = web3.utils.toWei($('input[name="deposit-amount"]').val(), "Ether");
+        console.log("value:"+value);
         const puzzle = await instance.generatePuzzle.call(password, carol);
-
+        console.log("puzzle:"+puzzle);
         // trial run with call to see if transaction will be successful
-        assert(await instance.depositFunds.call(puzzle, deadline, {from: alice, value: value}), 
-        "Transaction will fail, didn't send");
+       /* assert(await instance.depositFunds.call(puzzle, deadline, {from: alice, value: value}), 
+        "Transaction will fail, didn't send");*/
 
         // Deposit funds
         const tx = await instance.depositFunds(puzzle, deadline, {from: alice, value: value}).on(
@@ -98,7 +102,11 @@ async function getBalance() {
         const carol = accounts[2];
         const password = $('input[name="withdrawPw-bob"]').val()
         const puzzle = await instance.generatePuzzle.call(password, carol);
-
+        console.log("puzzle:"+puzzle+":");
+        console.log("testy:"+ await instance.balances.call(puzzle));
+        console.log("testy:"+ await instance.balances.call(puzzle).value);
+        console.log("testy:"+ await instance.balances.call(puzzle).sender);
+        console.log("testy:"+ await instance.balances.call(puzzle).deadline);
         const balance = web3.utils.fromWei((await instance.balances.call(puzzle)).value);
         $('#amount-contract').html('You can withdraw ' + balance + ' ETH');
     }
